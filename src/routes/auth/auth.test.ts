@@ -30,8 +30,8 @@ describe("auth routes", () => {
   });
 
   const validUser = () => ({
-    name: "Test User",
-    username: `testuser_${Date.now()}`,
+    firstName: "Test",
+    surname: "User",
     email: `testuser_${Date.now()}@example.com`,
     password: "securePassword123",
     confirmPassword: "securePassword123",
@@ -44,8 +44,8 @@ describe("auth routes", () => {
     const response = await client.auth.register.$post({
       // @ts-expect-error
       json: {
-        username: "",
         email: "invalid-email",
+        password: "",
       },
     });
     expect(response.status).toBe(422);
@@ -63,7 +63,8 @@ describe("auth routes", () => {
     expect(response.status).toBe(201);
     if (response.status === 201) {
       const json = await response.json();
-      expect(json.username).toBeDefined();
+      expect(json.firstName).toBeDefined();
+      expect(json.surname).toBeDefined();
       expect(json.email).toBeDefined();
     }
   });
@@ -75,7 +76,7 @@ describe("auth routes", () => {
 
     const response = await client.auth.login.$post({
       json: {
-        username: user.username,
+        email: user.email,
         password: user.password,
       },
     });
@@ -92,14 +93,14 @@ describe("auth routes", () => {
   it("post /auth/login returns 401 for invalid credentials", async () => {
     const response = await client.auth.login.$post({
       json: {
-        username: "nonexistentuser",
+        email: "nonexistentuser@example.com",
         password: "wrongPassword",
       },
     });
     expect(response.status).toBe(401);
     if (response.status === 401) {
       const json = await response.json();
-      expect(json.message).toBe("Invalid login credentials");
+      expect(json.message).toBe("Invalid email or password");
     }
   });
 
@@ -117,17 +118,30 @@ describe("auth routes", () => {
 
   it("post /auth/logout invalidates the refresh token", async () => {
     await delay(50); // Prevent SQLITE_BUSY by spacing out the operations
+
+    // Log out with a valid refresh token
     const logoutResponse = await client.auth.logout.$post({
       json: { refreshToken },
     });
     expect(logoutResponse.status).toBe(204);
 
+    // Attempt to use the same token for refreshing
     const refreshResponse = await client.auth["refresh-token"].$post({
       json: { refreshToken },
     });
     expect(refreshResponse.status).toBe(401);
     if (refreshResponse.status === 401) {
       const json = await refreshResponse.json();
+      expect(json.message).toBe("Invalid or expired refresh token");
+    }
+
+    // Try to log out again with the revoked token
+    const secondLogoutResponse = await client.auth.logout.$post({
+      json: { refreshToken },
+    });
+    expect(secondLogoutResponse.status).toBe(401);
+    if (secondLogoutResponse.status === 401) {
+      const json = await secondLogoutResponse.json();
       expect(json.message).toBe("Invalid or expired refresh token");
     }
   });

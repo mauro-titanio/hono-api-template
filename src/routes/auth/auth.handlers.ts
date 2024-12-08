@@ -24,47 +24,46 @@ export const register: AppRouteHandler<RegisterRoute> = async (c) => {
 
   const existingUser = await db.query.users.findFirst({
     where(fields, operators) {
-      return operators.or(
-        operators.eq(fields.email, data.email),
-        operators.eq(fields.username, data.username),
-      );
+      return operators.eq(fields.email, data.email);
     },
   });
 
   if (existingUser) {
     return c.json(
-      { message: "Email or Username already exists" },
+      { message: "Email already exists" },
       HttpStatusCodes.CONFLICT,
     );
   }
 
   const hashedPassword = await passwordHash(data.password);
   const [user] = await db.insert(users)
-    .values({ ...data, password: hashedPassword })
+    .values({
+      firstName: data.firstName,
+      surname: data.surname,
+      email: data.email,
+      password: hashedPassword,
+    })
     .returning();
 
   return c.json(
-    { id: user.id, username: user.username, email: user.email },
+    { id: user.id, firstName: user.firstName, surname: user.surname, email: user.email },
     HttpStatusCodes.CREATED,
   );
 };
 
 // Login
 export const login: AppRouteHandler<LoginRoute> = async (c) => {
-  const { username, password } = c.req.valid("json");
+  const { email, password } = c.req.valid("json");
 
   const user = await db.query.users.findFirst({
-    where(fields, operators) {
-      return operators.or(
-        operators.eq(fields.email, username),
-        operators.eq(fields.username, username),
-      );
+    where(fields) {
+      return eq(fields.email, email);
     },
   });
 
   if (!user || !(await passwordVerify(password, user.password))) {
     return c.json(
-      { message: "Invalid login credentials" },
+      { message: "Invalid email or password" },
       HttpStatusCodes.UNAUTHORIZED,
     );
   }
@@ -82,7 +81,6 @@ export const login: AppRouteHandler<LoginRoute> = async (c) => {
   return c.json({ accessToken, refreshToken }, HttpStatusCodes.OK);
 };
 
-// Refresh Token
 export const refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
   const { refreshToken } = c.req.valid("json");
 
@@ -90,15 +88,13 @@ export const refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
     const decoded = await validateToken(refreshToken);
 
     const tokenRecord = await db.query.userTokens.findFirst({
-      where(fields, operators) {
-        return operators.and(
-          operators.eq(fields.token, refreshToken),
-          operators.eq(fields.revoked, false),
-        );
+      where(fields) {
+        return eq(fields.token, refreshToken);
       },
     });
 
-    if (!tokenRecord) {
+    if (!tokenRecord || tokenRecord.revoked || tokenRecord.expiresAt < new Date()) {
+      // Add a check for revoked tokens and expiration
       return c.json(
         { message: "Invalid or expired refresh token" },
         HttpStatusCodes.UNAUTHORIZED,
@@ -121,12 +117,13 @@ export const logout: AppRouteHandler<LogoutRoute> = async (c) => {
   const { refreshToken } = c.req.valid("json");
 
   const tokenRecord = await db.query.userTokens.findFirst({
-    where(fields, operators) {
-      return operators.eq(fields.token, refreshToken);
+    where(fields) {
+      return eq(fields.token, refreshToken);
     },
   });
 
-  if (!tokenRecord) {
+  if (!tokenRecord || tokenRecord.revoked) {
+    // Ensure revoked tokens are treated as invalid
     return c.json(
       { message: "Invalid or expired refresh token" },
       HttpStatusCodes.UNAUTHORIZED,

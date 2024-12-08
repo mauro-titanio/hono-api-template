@@ -8,6 +8,13 @@
       "when": 1733573947718,
       "tag": "0000_fluffy_deadpool",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1733680316081,
+      "tag": "0001_salty_jackal",
+      "breakpoints": true
     }
   ]
 }

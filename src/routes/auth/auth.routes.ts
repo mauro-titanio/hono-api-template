@@ -3,7 +3,11 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import { createErrorSchema } from "stoker/openapi/schemas";
 
-import { loginSchema, refreshTokenSchema, registerSchema } from "@/db/schemas/auth.schema";
+import {
+  loginSchema,
+  refreshTokenSchema,
+  registerSchema,
+} from "@/db/schemas/auth.schema";
 import jwtAuthMiddleware from "@/middlewares/jwt.middleware";
 
 const tags = ["Authentication"];
@@ -22,7 +26,8 @@ export const register = createRoute({
     [HttpStatusCodes.CREATED]: jsonContent(
       z.object({
         id: z.number(),
-        username: z.string(),
+        firstName: z.string(),
+        surname: z.string(),
         email: z.string(),
       }),
       "The created user",
@@ -31,7 +36,7 @@ export const register = createRoute({
       z.object({
         message: z.string(),
       }),
-      "Email or username already exists",
+      "Email already exists",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(registerSchema),
