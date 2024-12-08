@@ -57,6 +57,7 @@ describe("auth routes", () => {
 
   it("post /auth/register creates a user", async () => {
     await delay(50); // Prevent SQLITE_BUSY by adding delay
+
     const response = await client.auth.register.$post({
       json: validUser(),
     });

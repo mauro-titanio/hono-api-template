@@ -33,8 +33,8 @@ describe("tasks routes", () => {
 
   it("post /tasks validates the body when creating", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks.$post({
-      // @ts-expect-error
       json: {
         done: false,
       },
@@ -51,6 +51,7 @@ describe("tasks routes", () => {
 
   it("post /tasks creates a task", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks.$post({
       json: {
         name,
@@ -68,10 +69,12 @@ describe("tasks routes", () => {
 
   it("get /tasks lists all tasks", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks.$get();
     expect(response.status).toBe(200);
     if (response.status === 200) {
       const json = await response.json();
+      // @ts-expect-error
       expectTypeOf(json).toBeArray();
       expect(json.length).toBeGreaterThan(0);
       if (!taskId) {
@@ -82,9 +85,9 @@ describe("tasks routes", () => {
 
   it("get /tasks/{id} validates the id param", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks[":id"].$get({
       param: {
-        // @ts-expect-error
         id: "wat",
       },
     });
@@ -98,6 +101,7 @@ describe("tasks routes", () => {
 
   it("get /tasks/{id} returns 404 when task not found", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks[":id"].$get({
       param: {
         id: 999,
@@ -112,6 +116,7 @@ describe("tasks routes", () => {
 
   it("get /tasks/{id} gets a single task", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks[":id"].$get({
       param: {
         id: taskId!,
@@ -127,6 +132,7 @@ describe("tasks routes", () => {
 
   it("patch /tasks/{id} validates the body when updating", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks[":id"].$patch({
       param: {
         id: taskId!,
@@ -145,6 +151,7 @@ describe("tasks routes", () => {
 
   it("patch /tasks/{id} updates a single property of a task", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks[":id"].$patch({
       param: {
         id: taskId!,
@@ -162,6 +169,7 @@ describe("tasks routes", () => {
 
   it("delete /tasks/{id} removes a task", async () => {
     await delay(50); // Prevent SQLite locking issues
+    // @ts-expect-error
     const response = await client.tasks[":id"].$delete({
       param: {
         id: taskId!,
